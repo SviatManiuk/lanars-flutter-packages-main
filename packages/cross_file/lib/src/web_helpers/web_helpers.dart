@@ -1,6 +1,8 @@
 // Copyright 2013 The Flutter Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+import 'dart:js_interop';
+import 'dart:typed_data';
 
 import 'package:web/web.dart';
 
@@ -34,4 +36,27 @@ Element ensureInitialized(String id) {
 /// (This is the same check used in flutter/engine)
 bool isSafari() {
   return window.navigator.vendor == 'Apple Computer, Inc.';
+}
+
+/// Converts an html [Blob] object to a [Uint8List], through a [FileReader].
+Future<Uint8List> blobToByteBuffer(Blob blob) async {
+  final FileReader reader = FileReader();
+  reader.readAsArrayBuffer(blob);
+
+  await reader.onLoadEnd.first;
+
+  final Uint8List? result = reader.result as Uint8List?;
+
+  if (result == null) {
+    throw Exception('Cannot read bytes from Blob. Is it still available?');
+  }
+
+  return result;
+}
+
+/// Creates a [Blob] from a bunch of [bytes] and an optional [mimeType].
+Blob bytesToBlob(Uint8List bytes, String? mimeType) {
+  return (mimeType == null)
+      ? Blob(<JSUint8Array>[bytes.toJS].toJS)
+      : Blob(<JSUint8Array>[bytes.toJS].toJS, BlobPropertyBag(type: mimeType));
 }
