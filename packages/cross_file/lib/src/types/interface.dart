@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'dart:typed_data';
+
 import 'package:meta/meta.dart';
 
 import './base.dart';
@@ -30,9 +31,7 @@ class XFile extends XFileBase {
     DateTime? lastModified,
     @visibleForTesting CrossFileTestOverrides? overrides,
   }) {
-    throw UnimplementedError(
-      'CrossFile is not available in your current platform.',
-    );
+    throw UnimplementedError('CrossFile is not available in your current platform.');
   }
 
   /// Construct a CrossFile object from its data.
@@ -48,9 +47,27 @@ class XFile extends XFileBase {
     String? path,
     @visibleForTesting CrossFileTestOverrides? overrides,
   }) : super(path) {
-    throw UnimplementedError(
-      'CrossFile is not available in your current platform.',
-    );
+    throw UnimplementedError('CrossFile is not available in your current platform.');
+  }
+
+  /// Web-only: Construct a CrossFile from a JS `File` (extends Blob).
+  XFile.fromHtmlFile(
+    Object file, {
+    String? path,
+    @visibleForTesting CrossFileTestOverrides? overrides,
+  }) : super(path) {
+    throw UnimplementedError('fromHtmlFile not available in your current platform.');
+  }
+
+  /// Web-only: Construct a CrossFile from a JS `Blob`.
+  XFile.fromHtmlBlob(
+    Object blob, {
+    String? name,
+    DateTime? lastModified,
+    String? path,
+    @visibleForTesting CrossFileTestOverrides? overrides,
+  }) : super(path) {
+    throw UnimplementedError('fromHtmlBlob not available in your current platform.');
   }
 }
 

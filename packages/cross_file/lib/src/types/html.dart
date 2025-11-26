@@ -7,7 +7,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
-import 'package:web/web.dart';
+import 'package:web/web.dart' as web;
 
 import '../web_helpers/blob_stream.dart';
 import '../web_helpers/web_helpers.dart';
@@ -26,7 +26,7 @@ class XFile extends XFileBase {
   /// so no http requests are performed to retrieve files later.
   ///
   /// `name` needs to be passed from the outside, since it's only available
-  /// while handling [html.File]s (when the ObjectUrl is created).
+  /// while handling [web.File]s (when the ObjectUrl is created).
   // ignore: use_super_parameters
   XFile(
     String path, {
@@ -65,19 +65,38 @@ class XFile extends XFileBase {
        _name = name ?? '',
        super(path) {
     _browserBlob = bytesToBlob(bytes, mimeType);
-    _path = URL.createObjectURL(_browserBlob!);
+    _path = web.URL.createObjectURL(_browserBlob!);
   }
 
   /// Construct a CrossFile from a JS [File] (extends Blob).
-  XFile.fromFile(File file, {String? path, @visibleForTesting CrossFileTestOverrides? overrides})
-    : _browserBlob = file,
-      _name = file.name,
-      _mimeType = file.type,
-      _length = file.size,
-      _lastModified = DateTime.fromMillisecondsSinceEpoch(file.lastModified),
-      _overrides = overrides,
-      _path = URL.createObjectURL(file),
-      super(path);
+  XFile.fromHtmlFile(
+    web.File file, {
+    String? path,
+    @visibleForTesting CrossFileTestOverrides? overrides,
+  }) : _browserBlob = file,
+       _name = file.name,
+       _mimeType = file.type,
+       _length = file.size,
+       _lastModified = DateTime.fromMillisecondsSinceEpoch(file.lastModified),
+       _overrides = overrides,
+       _path = web.URL.createObjectURL(file),
+       super(path);
+
+  /// Construct a CrossFile from a JS [File] (extends Blob).
+  XFile.fromHtmlBlob(
+    web.Blob blob, {
+    String? name,
+    DateTime? lastModified,
+    String? path,
+    @visibleForTesting CrossFileTestOverrides? overrides,
+  }) : _browserBlob = blob,
+       _name = name ?? 'unnamed',
+       _mimeType = blob.type,
+       _length = blob.size,
+       _lastModified = lastModified ?? DateTime.now(),
+       _overrides = overrides,
+       _path = web.URL.createObjectURL(blob),
+       super(path);
 
   // Overridable (meta) data that can be specified by the constructors.
 
@@ -100,11 +119,11 @@ class XFile extends XFileBase {
   // This can be passed in (as `bytes` in the constructor) or derived from
   // [_path] with a fetch request.
   // (Similar to a (read-only) dart:io File.)
-  Blob? _browserBlob;
+  web.Blob? _browserBlob;
 
   // An html Element that will be used to trigger a "save as" dialog later.
   // TODO(dit): https://github.com/flutter/flutter/issues/91400 Remove this _target.
-  late Element _target;
+  late web.Element _target;
 
   // Overrides for testing
   // TODO(dit): https://github.com/flutter/flutter/issues/91400 Remove these _overrides,
@@ -125,7 +144,7 @@ class XFile extends XFileBase {
   @override
   Future<DateTime> lastModified() async => _lastModified;
 
-  Future<Blob> get _blob async {
+  Future<web.Blob> get _blob async {
     if (_browserBlob != null) {
       return _browserBlob!;
     }
@@ -136,17 +155,17 @@ class XFile extends XFileBase {
       throw Exception('Safari cannot handle XFiles larger than 4GB.');
     }
 
-    final blobCompleter = Completer<Blob>();
+    final blobCompleter = Completer<web.Blob>();
 
-    late XMLHttpRequest request;
-    request = XMLHttpRequest()
+    late web.XMLHttpRequest request;
+    request = web.XMLHttpRequest()
       ..open('get', path, true)
       ..responseType = 'blob'
-      ..onLoad.listen((ProgressEvent e) {
+      ..onLoad.listen((web.ProgressEvent e) {
         assert(request.response != null, 'The Blob backing this XFile cannot be null!');
-        blobCompleter.complete(request.response! as Blob);
+        blobCompleter.complete(request.response! as web.Blob);
       })
-      ..onError.listen((ProgressEvent e) {
+      ..onError.listen((web.ProgressEvent e) {
         if (e.type == 'error') {
           blobCompleter.completeError(
             Exception('Could not load Blob from its URL. Has it been revoked?'),
@@ -177,7 +196,6 @@ class XFile extends XFileBase {
     return BlobStream(_blob, start, end);
   }
 
-
   /// Saves the data of this CrossFile at the location indicated by path.
   /// For the web implementation, the path variable is ignored.
   // TODO(dit): https://github.com/flutter/flutter/issues/91400
@@ -189,8 +207,8 @@ class XFile extends XFileBase {
 
     // Create an <a> tag with the appropriate download attributes and click it
     // May be overridden with CrossFileTestOverrides
-    final HTMLAnchorElement element = _hasTestOverrides
-        ? _overrides!.createAnchorElement(this.path, name) as HTMLAnchorElement
+    final web.HTMLAnchorElement element = _hasTestOverrides
+        ? _overrides!.createAnchorElement(this.path, name) as web.HTMLAnchorElement
         : createAnchorElement(this.path, name);
 
     // Clear the children in _target and add an element to click
@@ -210,5 +228,5 @@ class CrossFileTestOverrides {
   CrossFileTestOverrides({required this.createAnchorElement});
 
   /// For overriding the creation of the file input element.
-  Element Function(String href, String suggestedName) createAnchorElement;
+  web.Element Function(String href, String suggestedName) createAnchorElement;
 }
